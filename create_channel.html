@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.595.0.min.js"></script>
+  <script src="https://unpkg.com/amazon-kinesis-video-streams-webrtc/dist/kvs-webrtc.min.js"></script>
+  <script src="kvs_keys.js"></script>
+  <title>KVS Channel</title>
+
+</head>
+
+<body>
+  channelName
+  <input type="text" size="20" id="channel_name" value=""></input>
+  <button id="create_button" onclick="createChannel()">create channel</button>
+  <br />
+  ARN
+  <div id="arn"></div>
+</body>
+<script>
+  "use strict"
+
+  // refer
+  //   https://github.com/awslabs/amazon-kinesis-video-streams-webrtc-sdk-js
+
+
+  // AWS Credentials
+  const accessKeyId = AWS_ACCESS_KEY_ID;
+  const secretAccessKey = AWS_SECRET_ACCESS_KEY;
+
+  // AWS region
+  const region = AWS_REGION;
+
+  // UI Element
+  const channelNameInput = document.getElementById('channel_name');
+  const arnDiv = document.getElementById('arn');
+
+  const globalKVS = {};
+
+  function setupKVS() {
+    // --------- Create KVS Client -----
+    const kinesisVideoClient = new AWS.KinesisVideo({
+      region,
+      accessKeyId,
+      secretAccessKey,
+    });
+    globalKVS.kinesisVideoClient = kinesisVideoClient;
+
+  }
+
+  function getChannelName() {
+    const channel = channelNameInput.value;
+    return channel;
+  }
+
+  function showArn(arn) {
+    arnDiv.innerHTML = arn;
+  }
+
+  function showMessage(text) {
+    arnDiv.innerHTML = text;
+  }
+
+  function createChannel() {
+    const channel = getChannelName();
+    if ( (! channel) || (channel === '')) {
+      console.warn('channelName empty');
+      return;
+    }
+    const params = {
+      ChannelName: channel, /* required */
+      ChannelType: 'SINGLE_MASTER',
+      SingleMasterConfiguration: {
+        MessageTtlSeconds: 30
+      }
+    };
+    console.log(params);
+    showMessage('creating channel:' + channel);
+
+    globalKVS.kinesisVideoClient.createSignalingChannel(params, function (err, data) {
+      if (err) {
+        console.log(err, err.stack); // an error occurred
+        showMessage(err.toString());
+      }
+      else {
+        console.log(data);           // successful response
+        showArn(data.ChannelARN);
+      }
+    });
+  }
+
+  // --- init ---
+  setupKVS();
+
+</script>
+
+</html>
